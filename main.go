@@ -5,6 +5,7 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"net/smtp"
 	"os"
 )
 
@@ -17,6 +18,7 @@ func main() {
 			t.Execute(w, nil)
 		case "POST":
 			log.Print("Got a POST, send a mail and redirect")
+			go sendMail()
 			http.Redirect(w, r, "/", http.StatusMovedPermanently)
 		default:
 			errString := fmt.Sprintf("Method %v not allowed", r.Method)
@@ -25,4 +27,21 @@ func main() {
 		}
 	})
 	log.Fatal(http.ListenAndServe(":"+os.Getenv("PORT"), nil))
+}
+
+var (
+	smtpLogin    = os.Getenv("MAILGUN_SMTP_LOGIN")
+	smtpPassword = os.Getenv("MAILGUN_SMTP_PASSWORD")
+	smtpServer   = os.Getenv("MAILGUN_SMTP_SERVER")
+	smtpPort     = os.Getenv("MAILGUN_SMTP_PORT")
+)
+
+func sendMail() {
+	auth := smtp.PlainAuth("", smtpLogin, smtpPassword, smtpServer)
+	to := []string{"yannsalaun1@gmail.com"}
+	msg := []byte("Subject: This is the subject\nThis is the body")
+	err := smtp.SendMail(smtpServer+":"+smtpPort, auth, "sender@example.com", to, msg)
+	if err != nil {
+		log.Print(err)
+	}
 }
